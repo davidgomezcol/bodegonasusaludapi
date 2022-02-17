@@ -11,20 +11,17 @@ These instructions will get you a copy of the project up and running on your loc
 To run this project you will need to install Django Rest Framework, Django, Pillow...
 
 ```
-Give examples
+pip install --upgrade pip
+pip install djangorestframework
 ```
 
 ### Installing
 
 A step by step series of examples that tell you how to get a development env running
 
-pip install --upgrade pip
-pip install djangorestframework
+```
 pip install Pillow
 pip install Flake8
-
-```
-Give the example
 ```
 
 And repeat

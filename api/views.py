@@ -12,4 +12,3 @@ class CategoriesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     permission_classes = (IsAuthenticated,)
     queryset = Categories.objects.all()
     serializer_class = serializers.CategoriesSerializer
-
