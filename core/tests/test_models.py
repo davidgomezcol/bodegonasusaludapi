@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
@@ -40,3 +42,36 @@ class ModelTests(TestCase):
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_categories_str(self):
+        """Test the categories representation"""
+        category = models.Categories.objects.create(
+            user=sample_user(),
+            name='Vinos'
+        )
+
+        self.assertEqual(str(category), category.name)
+
+    def test_products_str(self):
+        """Test the products representation"""
+        product = models.Products.objects.create(
+            user=sample_user(),
+            name='Santa Ana',
+            description='El vino Santa ana es un vino tinto...',
+            price=15.00,
+            weight="0.70",
+            units='l',
+            featured=False,
+        )
+
+        self.assertEqual(str(product), product.name)
+
+    @patch('uuid.uuid4')
+    def test_product_file_name_uuid(self, mock_uuid):
+        """Test that the image is saved in the correct location"""
+        uuid = 'test-uuid'
+        mock_uuid.return_value = uuid
+        file_path = models.product_image_file_path(None, 'myimage.jpg')
+
+        exp_path = f'uploads/product/{uuid}.jpg'
+        self.assertEqual(file_path, exp_path)

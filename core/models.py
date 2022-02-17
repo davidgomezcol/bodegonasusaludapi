@@ -1,6 +1,17 @@
+import uuid
+import os
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, \
     PermissionsMixin
+from django.conf import settings
+
+
+def product_image_file_path(instance, filename):
+    """Generates file path for new product image"""
+    ext = filename.split('.')[-1]
+    filename = f'{uuid.uuid4()}.{ext}'
+
+    return os.path.join('uploads/product/', filename)
 
 
 class UserManager(BaseUserManager):
@@ -34,3 +45,34 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
+
+
+class Categories(models.Model):
+    """Category to be used for a product"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+
+class Products(models.Model):
+    """Product to be saved with a category"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    category = models.ManyToManyField('Categories')
+    weight = models.CharField(max_length=50)
+    units = models.CharField(max_length=50)
+    featured = models.BooleanField(default=False)
+    image = models.ImageField(null=True, upload_to=product_image_file_path)
+
+    def __str__(self):
+        return self.name
