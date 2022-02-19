@@ -15,15 +15,12 @@ class CategoriesSerializer(serializers.ModelSerializer):
 class ProductsSerializer(serializers.ModelSerializer):
     """Serializer for products object"""
 
-    category = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=Categories.objects.all()
-    )
+    category = serializers.StringRelatedField(many=True)
 
     class Meta:
         model = Products
         fields = '__all__'
-        read_only_fields = ('id',)
+        read_only_fields = ('id', 'category')
 
 
 class ProductDetailSerializer(ProductsSerializer):

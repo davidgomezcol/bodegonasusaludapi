@@ -71,6 +71,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
+REST_FRAMEWORK = {
+    'COERCE_DECIMAL_TO_STRING': False,
+}
+
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
