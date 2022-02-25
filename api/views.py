@@ -21,7 +21,8 @@ class ProductsViewSet(viewsets.ModelViewSet):
     queryset = Products.objects.all()
     serializer_class = serializers.ProductsSerializer
 
-    def _params_to_ints(self, qs):
+    @staticmethod
+    def _params_to_ints(qs):
         """Convert a list of string IDs to a list of integers"""
         return [int(str_id) for str_id in qs.split(',')]
 
@@ -37,7 +38,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
         return queryset.filter(user=self.request.user)
 
     def get_serializer_class(self):
-        """Return appropiate serializer class"""
+        """Return appropriate serializer class"""
         if self.action == 'retrieve':
             return serializers.ProductDetailSerializer
         elif self.action == 'upload-image':

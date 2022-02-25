@@ -7,8 +7,8 @@ from rest_framework import status
 
 from core.models import Products, Categories
 
-from api.serializers import CategoriesSerializer, \
-    ProductsSerializer, ProductDetailSerializer
+from api.serializers import ProductsSerializer, \
+    ProductDetailSerializer
 
 PRODUCTS_URL = reverse('api:products-list')
 
