@@ -1,9 +1,17 @@
 import uuid
 import os
+from django.utils.crypto import get_random_string
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, \
     PermissionsMixin
 from django.conf import settings
+
+ORDER_STATUS_CHOICES = (
+    ('Created', 'Created'),
+    ('Shipped', 'Shipped'),
+    ('Completed', 'Completed'),
+    ('Refunded', 'Refunded'),
+)
 
 
 def product_image_file_path(instance, filename):
@@ -12,6 +20,10 @@ def product_image_file_path(instance, filename):
     filename = f'{uuid.uuid4()}.{ext}'
 
     return os.path.join('uploads/product/', filename)
+
+
+def _generate_tracking_number():
+    return get_random_string(10).upper()
 
 
 class UserManager(BaseUserManager):
@@ -39,6 +51,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Custom User Model that supports using email instead of username"""
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    address = models.CharField(max_length=255)
+    city = models.CharField(max_length=50)
+    state = models.CharField(max_length=50)
+    zip_code = models.IntegerField(default=1000)
+    phone = models.CharField(max_length=20)
+    id_type = models.CharField(max_length=20)
+    id_number = models.IntegerField(default=1000)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=True)
 
@@ -72,7 +92,51 @@ class Products(models.Model):
     weight = models.CharField(max_length=50)
     units = models.CharField(max_length=50)
     featured = models.BooleanField(default=False)
+    discount = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
     image = models.ImageField(null=True, upload_to=product_image_file_path)
 
     def __str__(self):
         return self.name
+
+
+class Orders(models.Model):
+    """Orders that will be created with products and users"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
+    order_status = models.CharField(
+        max_length=20, choices=ORDER_STATUS_CHOICES, default='Created'
+    )
+    payment_mode = models.CharField(max_length=255, null=False)
+    tracking_number = models.CharField(
+        max_length=150,
+        null=True,
+        default=_generate_tracking_number,
+        unique=True
+    )
+    is_paid = models.BooleanField(default=False)
+    order_date = models.DateField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+    shipped_date = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return '{} - {}'.format(self.id, self.tracking_number)
+
+
+class OrderItem(models.Model):
+    """Order items of the Order"""
+    order = models.ForeignKey(
+        'Orders', related_name="order_items", on_delete=models.CASCADE
+    )
+    product = models.ForeignKey('Products', on_delete=models.CASCADE)
+    quantity = models.IntegerField()
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+
+    def __str__(self):
+        return '{} - {}'.format(self.order.id, self.order.tracking_number)
