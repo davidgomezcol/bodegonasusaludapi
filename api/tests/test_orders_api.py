@@ -36,7 +36,7 @@ def sample_product(user, **params):
     defaults = {
         'name': 'Ron Cacique',
         'description': 'El ron cacique es...',
-        'price': 15,
+        'price': 20,
         'weight': '0.70',
         'units': 'l',
         'featured': True,
@@ -44,6 +44,16 @@ def sample_product(user, **params):
     defaults.update(params)
 
     return Products.objects.create(user=user, **defaults)
+
+
+def detail_orders_url(order_id):
+    """Return orders detail Url"""
+    return reverse('api:orders-detail', args=[order_id])
+
+
+def detail_order_item_url(order_id):
+    """Returns Order Item Url"""
+    return reverse('api:orderitem-detail', args=[order_id])
 
 
 class PublicOrdersApiTests(TestCase):
@@ -69,22 +79,24 @@ class PrivateOrdersApiTests(TestCase):
     def test_retrieve_orders(self):
         """Test retrieving a list of Orders"""
         order = sample_order(user=self.user)
-        product = sample_product(user=self.user)
+        sample_product(user=self.user)
 
         item = {
-            'product': product,
+            'product': 1,
             'quantity': 2,
         }
 
+        product_selected = Products.objects.get(id=item['product'])
+
         total_price = OrderViewSet._calculate_total(
-            product.price, item['quantity']
+            product_selected.price, item['quantity']
         )
 
         OrderItem.objects.create(
             order=order,
-            product=product,
+            product=product_selected,
             quantity=item['quantity'],
-            discount=product.discount,
+            discount=product_selected.discount,
             total_price=total_price
         )
 
@@ -115,13 +127,71 @@ class PrivateOrdersApiTests(TestCase):
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data, serializer.data)
 
-    # def test_view_order_detail(self):
-    #     """Test viewing a product detail"""
-    #     order = sample_order(user=self.user)
-    #     order.item.add(sample_items(user=self.user))
-    #
-    #     url = detail_url(product.id)
-    #     res = self.client.get(url)
-    #
-    #     serializer = ProductDetailSerializer(product)
-    #     self.assertEqual(res.data, serializer.data)
+    def test_view_order_detail(self):
+        """Test viewing an order detail"""
+        order = sample_order(user=self.user)
+        sample_product(user=self.user)
+
+        item = {
+            'product': 1,
+            'quantity': 2,
+        }
+
+        product_selected = Products.objects.get(id=item['product'])
+
+        total_price = OrderViewSet._calculate_total(
+            product_selected.price, item['quantity']
+        )
+
+        OrderItem.objects.create(
+            order=order,
+            product=product_selected,
+            quantity=item['quantity'],
+            discount=product_selected.discount,
+            total_price=total_price
+        )
+
+        url = detail_orders_url(order.id)
+        res = self.client.get(url)
+
+        serializer = OrderSerializer(order)
+
+        self.assertEqual(len(res.data['order_items']), 1)
+        self.assertEqual(res.data, serializer.data)
+
+    def test_view_order_items_detail(self):
+        """test viewing an order items detail"""
+        sample_product(user=self.user)
+        product2 = {
+            'user': self.user,
+            'name': "Vodka Gordon's",
+            'description': "'El Vodka Gordon's es...'",
+            'price': 15,
+            'weight': '0.70',
+            'units': 'l',
+            'featured': False,
+        }
+
+        Products.objects.create(**product2)
+
+        items = {
+            "payment_mode": "Credit Card",
+            "order_items": [
+                {
+                    'product': 1,
+                    'quantity': 2,
+                },
+            ]
+        }
+
+        response = self.client.post(
+            '/api/orders/',
+            items,
+            format='json'
+        )
+
+        url = detail_order_item_url(1)
+        res = self.client.get(url)
+        self.assertEqual(len(res.data), 6)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

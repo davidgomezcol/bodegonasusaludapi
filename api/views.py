@@ -55,8 +55,21 @@ class OrderViewSet(viewsets.ModelViewSet):
     queryset = Orders.objects.all()
     serializer_class = serializers.OrderSerializer
 
+    @staticmethod
+    def _params_to_ints(qs):
+        """Convert a list of string IDs to a list of integers"""
+        return [int(str_id) for str_id in qs.split(',')]
+
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
+        """Retrieve orders for the authenticated user"""
+        order = self.request.query_params.get('order')
+        queryset = self.queryset
+
+        if order:
+            order_ids = self._params_to_ints(order)
+            queryset = queryset.filter(id__in=order_ids)
+
+        return queryset.filter(user=self.request.user)
 
     @staticmethod
     def _calculate_total(price, quantity):
@@ -100,12 +113,12 @@ class OrderItemViewSet(viewsets.ModelViewSet):
         return [int(str_id) for str_id in qs.split(',')]
 
     def get_queryset(self):
-        """Retrieve products for the authenticated user"""
-        order = self.request.query_params.get('order')
+        """Retrieve order items for the authenticated user"""
+        order_item = self.request.query_params.get('order')
         queryset = self.queryset
 
-        if order:
-            order_ids = self._params_to_ints(order)
-            queryset = queryset.filter(order__id__in=order_ids)
+        if order_item:
+            order_item_ids = self._params_to_ints(order_item)
+            queryset = queryset.filter(order_id__in=order_item_ids)
 
         return queryset.filter(order__user=self.request.user)
