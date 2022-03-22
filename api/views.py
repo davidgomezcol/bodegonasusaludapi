@@ -77,6 +77,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         return price * quantity
 
     def create(self, request, *args, **kwargs):
+        order_total = []
         orders_data = request.data.pop('order_items')
         order = Orders.objects.create(user=request.user, **request.data)
         order.save()
@@ -86,6 +87,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             total_price = self._calculate_total(
                 product.price, order_data['quantity']
             )
+            order_total.append(total_price)
             order_item = OrderItem.objects.create(
                 order=order,
                 product=product,
@@ -94,6 +96,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                 total_price=total_price
             )
             order_item.save()
+        order_total = sum(order_total)
+        Orders.objects.filter(id=order.id).update(order_total=order_total)
         return Response(
             {'message': 'Order created successfully.'},
             status.HTTP_201_CREATED

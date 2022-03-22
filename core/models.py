@@ -117,6 +117,11 @@ class Orders(models.Model):
         default=_generate_tracking_number,
         unique=True
     )
+    order_total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True)
     is_paid = models.BooleanField(default=False)
     order_date = models.DateField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
