@@ -1,6 +1,15 @@
 from rest_framework import serializers
+from django.conf import settings
 
 from core.models import Categories, Products, Orders, OrderItem
+
+
+def _product_image_url(filename):
+    if settings.DEBUG:
+        print(filename)
+        return f"http://localhost/{filename}"
+    else:
+        return f"https://{settings.ALLOWED_HOSTS[0]}/{filename}"
 
 
 class CategoriesSerializer(serializers.ModelSerializer):
@@ -16,11 +25,17 @@ class ProductsSerializer(serializers.ModelSerializer):
     """Serializer for products object"""
 
     category = serializers.StringRelatedField(many=True)
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Products
         fields = '__all__'
-        read_only_fields = ('id', 'category')
+        read_only_fields = ('id', 'category', 'image')
+
+    def get_image(self, obj):
+        if obj.image:
+            return _product_image_url(obj.image)
+        return None
 
 
 class ProductDetailSerializer(ProductsSerializer):
