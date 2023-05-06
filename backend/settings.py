@@ -25,8 +25,8 @@ SECRET_KEY = 'django-insecure-)85!d#+n-w0#70rn!v5yh6rbey8p&tti12h0i%_8^1eawa-vw6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['backend', 'localhost']
-
+# ALLOWED_HOSTS = ['backend', 'localhost']
+ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'django_extensions',
     'core',
     'user',
 ]
@@ -82,6 +83,12 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:80', 'http://backend:8000', 'http://localhost:3000',
 ]
+
+# # Redirect all HTTP requests to HTTPS
+# SECURE_SSL_REDIRECT = True
+#
+# # Set the header used by the proxy to indicate HTTPS requests
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases

@@ -1,15 +1,15 @@
 from rest_framework import serializers
 from django.conf import settings
+from typing import Union
 
 from core.models import Categories, Products, Orders, OrderItem
 
 
-def _product_image_url(filename):
+def _product_image_url(filename: object):
     if settings.DEBUG:
-        print(filename)
-        return f"http://localhost/{filename}"
+        return f"http://localhost/media/{filename}"
     else:
-        return f"https://{settings.ALLOWED_HOSTS[0]}/{filename}"
+        return f"https://{settings.ALLOWED_HOSTS[0]}/media/{filename}"
 
 
 class CategoriesSerializer(serializers.ModelSerializer):
@@ -32,7 +32,7 @@ class ProductsSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id', 'category', 'image')
 
-    def get_image(self, obj):
+    def get_image(self, obj: Products) -> Union[str, None]:
         if obj.image:
             return _product_image_url(obj.image)
         return None

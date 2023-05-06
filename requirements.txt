@@ -15,4 +15,5 @@ sqlparse==0.4.2
 zipp==3.7.0
 psycopg2-binary>=2.8
 gunicorn==20.1.0
-pydevd-pycharm~=222.4459.20
+django-extensions
+pytest-django

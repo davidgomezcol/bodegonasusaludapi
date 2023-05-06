@@ -1,7 +1,9 @@
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import viewsets, mixins, status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from typing import Union, List, Any
 
 from core.models import Categories, Products, Orders, OrderItem
 from api import serializers
@@ -26,6 +28,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
     @staticmethod
     def _params_to_ints(qs):
         """Convert a list of string IDs to a list of integers"""
+        final_list = [str(str_id) for str_id in qs.split(',')] # I need to review this. This may be wrong
         return [str(str_id) for str_id in qs.split(',')]
 
     def get_queryset(self):
@@ -56,7 +59,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.OrderSerializer
 
     @staticmethod
-    def _params_to_ints(qs):
+    def _params_to_ints(qs: List[str]) -> List[int]:
         """Convert a list of string IDs to a list of integers"""
         return [int(str_id) for str_id in qs.split(',')]
 
@@ -72,11 +75,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         return queryset.filter(user=self.request.user)
 
     @staticmethod
-    def _calculate_total(price, quantity):
+    def _calculate_total(price: Union[int, float], quantity: int):
         """helper function to calculate total price"""
         return price * quantity
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         order_total = []
         orders_data = request.data.pop('order_items')
         order = Orders.objects.create(user=request.user, **request.data)
@@ -105,14 +108,14 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 
 class OrderItemViewSet(viewsets.ModelViewSet):
-    """Manage order items for an specific order"""
+    """Manage order items for a specific order"""
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
     queryset = OrderItem.objects.all()
     serializer_class = serializers.OrderItemSerializer
 
     @staticmethod
-    def _params_to_ints(qs):
+    def _params_to_ints(qs: List[str]) -> List[int]:
         """Convert a list of string IDs to a list of integers"""
         return [int(str_id) for str_id in qs.split(',')]
 
