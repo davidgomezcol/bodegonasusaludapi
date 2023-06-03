@@ -2,24 +2,27 @@ import uuid
 import os
 from django.utils.crypto import get_random_string
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, \
-    PermissionsMixin
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
 from django.conf import settings
 
 ORDER_STATUS_CHOICES = (
-    ('Created', 'Created'),
-    ('Shipped', 'Shipped'),
-    ('Completed', 'Completed'),
-    ('Refunded', 'Refunded'),
+    ("Created", "Created"),
+    ("Shipped", "Shipped"),
+    ("Completed", "Completed"),
+    ("Refunded", "Refunded"),
 )
 
 
-def product_image_file_path(instance, filename):
+def product_image_file_path(filename):
     """Generates file path for new product image"""
-    ext = filename.split('.')[-1]
-    filename = f'{uuid.uuid4()}.{ext}'
+    ext = filename.split(".")[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
 
-    return os.path.join('product/', filename)
+    return os.path.join("product/", filename)
 
 
 def _generate_tracking_number():
@@ -30,7 +33,7 @@ class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         """Creates and saves a new User"""
         if not email:
-            raise ValueError('Users must have an email address.')
+            raise ValueError("Users must have an email address.")
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -49,6 +52,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     """Custom User Model that supports using email instead of username"""
+
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
@@ -64,11 +68,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
 
 
 class Categories(models.Model):
     """Category to be used for a product"""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -81,6 +86,7 @@ class Categories(models.Model):
 
 class Products(models.Model):
     """Product to be saved with a category"""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -88,7 +94,7 @@ class Products(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    category = models.ManyToManyField('Categories')
+    category = models.ManyToManyField("Categories")
     weight = models.CharField(max_length=50)
     units = models.CharField(max_length=50)
     featured = models.BooleanField(default=False)
@@ -103,40 +109,37 @@ class Products(models.Model):
 
 class Orders(models.Model):
     """Orders that will be created with products and users"""
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
     order_status = models.CharField(
-        max_length=20, choices=ORDER_STATUS_CHOICES, default='Created'
+        max_length=20, choices=ORDER_STATUS_CHOICES, default="Created"
     )
     payment_mode = models.CharField(max_length=255, null=False)
     tracking_number = models.CharField(
-        max_length=150,
-        null=True,
-        default=_generate_tracking_number,
-        unique=True
+        max_length=150, null=True, default=_generate_tracking_number, unique=True
     )
     order_total = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        blank=True,
-        null=True)
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
     is_paid = models.BooleanField(default=False)
     order_date = models.DateField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
     shipped_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return '{} - {}'.format(self.id, self.tracking_number)
+        return "{} - {}".format(self.id, self.tracking_number)
 
 
 class OrderItem(models.Model):
     """Order items of the Order"""
+
     order = models.ForeignKey(
-        'Orders', related_name="order_items", on_delete=models.CASCADE
+        "Orders", related_name="order_items", on_delete=models.CASCADE
     )
-    product = models.ForeignKey('Products', on_delete=models.CASCADE)
+    product = models.ForeignKey("Products", on_delete=models.CASCADE)
     quantity = models.IntegerField()
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(
@@ -144,4 +147,4 @@ class OrderItem(models.Model):
     )
 
     def __str__(self):
-        return '{} - {}'.format(self.order.id, self.order.tracking_number)
+        return "{} - {}".format(self.order.id, self.order.tracking_number)

@@ -1,40 +1,47 @@
-from django.test import TestCase, Client
-from django.contrib.auth import get_user_model
+import pytest
+
+from django.test import Client
 from django.urls import reverse
 
 
-class AdminSiteTests(TestCase):
+@pytest.mark.django_db
+def test_users_listed(sample_user, sample_admin_user):
+    """Test that users are listed on users page"""
+    client = Client()
+    admin_user = sample_admin_user()
+    client.force_login(admin_user)
 
-    def setUp(self):
-        self.client = Client()
-        self.admin_user = get_user_model().objects.create_superuser(
-            email='admin@bodegonasusalud.com',
-            password='password123'
-        )
-        self.client.force_login(self.admin_user)
-        self.user = get_user_model().objects.create_user(
-            email='user@bodegonasusalud.com',
-            password='password123',
-            name='Test user full name'
-        )
+    url = reverse("admin:core_user_changelist")
+    res = client.get(url)
 
-    def test_users_listed(self):
-        """Test that users are listed on users page"""
-        url = reverse('admin:core_user_changelist')
-        res = self.client.get(url)
+    user = sample_user()
 
-        self.assertContains(res, self.user.name)
-        self.assertContains(res, self.user.email)
+    assert (res, user.name)
+    assert (res, user.email)
 
-    def test_user_change_page(self):
-        """Test that the user edit page works"""
-        url = reverse('admin:core_user_change', args=[self.user.id])
-        res = self.client.get(url)
-        self.assertEqual(res.status_code, 200)
 
-    def test_create_user_page(self):
-        """Test that create user page works"""
-        url = reverse('admin:core_user_add')
-        res = self.client.get(url)
+@pytest.mark.django_db
+def test_user_change_page(sample_user, sample_admin_user):
+    """Test that the user edit page works"""
+    client = Client()
+    admin_user = sample_admin_user()
+    client.force_login(admin_user)
 
-        self.assertEqual(res.status_code, 200)
+    user = sample_user()
+
+    url = reverse("admin:core_user_change", args=[user.id])
+    res = client.get(url)
+    assert (res.status_code, 200)
+
+
+@pytest.mark.django_db
+def test_create_user_page(sample_admin_user):
+    """Test that create user page works"""
+    client = Client()
+    admin_user = sample_admin_user()
+    client.force_login(admin_user)
+
+    url = reverse("admin:core_user_add")
+    res = client.get(url)
+
+    assert (res.status_code, 200)

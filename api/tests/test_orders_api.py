@@ -1,5 +1,5 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
+import pytest
+
 from django.urls import reverse
 
 from rest_framework.test import APIClient
@@ -11,187 +11,142 @@ from api.serializers import OrderSerializer
 
 from api.views import OrderViewSet
 
-ORDERS_URL = reverse('api:orders-list')
-
-
-def create_sample_user():
-    """Creates a sample user for tests"""
-    return get_user_model().objects.create_user(
-        email='user@bodegonasusalud.com', password='password123'
-    )
-
-
-def sample_order(user, **params):
-    """Create and return a custom order"""
-    defaults = {
-        'payment_mode': 'Credit Card',
-    }
-    defaults.update(params)
-
-    return Orders.objects.create(user=user, **defaults)
-
-
-def sample_product(user, **params):
-    """Create and return a custom product"""
-    defaults = {
-        'name': 'Ron Cacique',
-        'description': 'El ron cacique es...',
-        'price': 20,
-        'weight': '0.70',
-        'units': 'l',
-        'featured': True,
-    }
-    defaults.update(params)
-
-    return Products.objects.create(user=user, **defaults)
+ORDERS_URL = reverse("api:orders-list")
 
 
 def detail_orders_url(order_id):
     """Return orders detail Url"""
-    return reverse('api:orders-detail', args=[order_id])
+    return reverse("api:orders-detail", args=[order_id])
 
 
 def detail_order_item_url(order_id):
     """Returns Order Item Url"""
-    return reverse('api:orderitem-detail', args=[order_id])
+    return reverse("api:orderitem-detail", args=[order_id])
 
 
-class PublicOrdersApiTests(TestCase):
-    """Tests that the api is for authenticated users only"""
-
-    def setUp(self):
-        self.client = APIClient()
-
-    def test_auth_required(self):
-        """Test that the authentication is required"""
-        res = self.client.get(ORDERS_URL)
-        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+@pytest.mark.django_db
+def test_auth_required():
+    """Test that the authentication is required"""
+    client = APIClient()
+    res = client.get(ORDERS_URL)
+    assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-class PrivateOrdersApiTests(TestCase):
-    """Test authenticated Orders Api Access"""
+@pytest.mark.django_db
+def test_retrieve_orders(api_client, sample_product, sample_order):
+    """Test retrieving a list of Orders"""
 
-    def setUp(self):
-        self.client = APIClient()
-        self.user = create_sample_user()
-        self.client.force_authenticate(self.user)
+    client, user = api_client
 
-    def test_retrieve_orders(self):
-        """Test retrieving a list of Orders"""
-        order = sample_order(user=self.user)
-        sample_product(user=self.user)
+    item = {
+        "product": 1,
+        "quantity": 2,
+    }
 
-        item = {
-            'product': 1,
-            'quantity': 2,
-        }
+    sample_product(user=user)
 
-        product_selected = Products.objects.get(id=item['product'])
+    product_selected = Products.objects.get(id=item["product"])
 
-        total_price = OrderViewSet._calculate_total(
-            product_selected.price, item['quantity']
-        )
+    total_price = OrderViewSet._calculate_total(
+        product_selected.price, item["quantity"]
+    )
 
-        OrderItem.objects.create(
-            order=order,
-            product=product_selected,
-            quantity=item['quantity'],
-            discount=product_selected.discount,
-            total_price=total_price
-        )
+    sample_order(user=user)
 
-        res = self.client.get(ORDERS_URL)
+    OrderItem.objects.create(
+        order=Orders.objects.get(id=1),
+        product=product_selected,
+        quantity=item["quantity"],
+        discount=product_selected.discount,
+        total_price=total_price,
+    )
 
-        orders = Orders.objects.all().order_by('-id')
-        serializer = OrderSerializer(orders, many=True)
+    res = client.get(ORDERS_URL)
 
-        self.assertEqual(len(res.data[0]['order_items']), 1)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)
+    orders = Orders.objects.all().order_by("-id")
+    serializer = OrderSerializer(orders, many=True)
 
-    def test_orders_limited_to_user(self):
-        """Test that the list of orders are limited to the user"""
-        user2 = get_user_model().objects.create_user(
-            'other@bodegonasusalud.com',
-            'otherpass123'
-        )
+    assert len(res.data[0]["order_items"]) == 1
+    assert res.status_code == status.HTTP_200_OK
+    assert res.data == serializer.data
 
-        sample_order(user=self.user)
-        sample_order(user=user2)
 
-        res = self.client.get(ORDERS_URL)
+@pytest.mark.django_db
+def test_orders_limited_to_user(custom_api_client, sample_user, sample_order):
+    """Test that the list of orders are limited to the user"""
 
-        orders = Orders.objects.filter(user=self.user)
-        serializer = OrderSerializer(orders, many=True)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data, serializer.data)
+    user2 = sample_user(email="user2@bodegonasusalud.com", password="otherpass123")
 
-    def test_view_order_detail(self):
-        """Test viewing an order detail"""
-        order = sample_order(user=self.user)
-        sample_product(user=self.user)
+    api_data = custom_api_client(user=user2)
+    client = api_data["client"]
+    user = api_data["user"]
 
-        item = {
-            'product': 1,
-            'quantity': 2,
-        }
+    sample_order(user=user2)
 
-        product_selected = Products.objects.get(id=item['product'])
+    res = client.get(ORDERS_URL)
 
-        total_price = OrderViewSet._calculate_total(
-            product_selected.price, item['quantity']
-        )
+    orders = Orders.objects.filter(user=user)
+    serializer = OrderSerializer(orders, many=True)
 
-        OrderItem.objects.create(
-            order=order,
-            product=product_selected,
-            quantity=item['quantity'],
-            discount=product_selected.discount,
-            total_price=total_price
-        )
+    assert res.status_code == status.HTTP_200_OK
+    assert len(res.data) == 1
+    assert res.data == serializer.data
 
-        url = detail_orders_url(order.id)
-        res = self.client.get(url)
 
-        serializer = OrderSerializer(order)
+@pytest.mark.django_db
+def test_view_order_detail(api_client, sample_product, sample_order, sample_order_item):
+    """Test viewing an order detail"""
 
-        self.assertEqual(len(res.data['order_items']), 1)
-        self.assertEqual(res.data, serializer.data)
+    client, user = api_client
 
-    def test_view_order_items_detail(self):
-        """test viewing an order items detail"""
-        sample_product(user=self.user)
-        product2 = {
-            'user': self.user,
-            'name': "Vodka Gordon's",
-            'description': "'El Vodka Gordon's es...'",
-            'price': 15,
-            'weight': '0.70',
-            'units': 'l',
-            'featured': False,
-        }
+    sample_product(user=user)
 
-        Products.objects.create(**product2)
+    product_selected = Products.objects.get(name="Santa Ana")
 
-        items = {
-            "payment_mode": "Credit Card",
-            "order_items": [
-                {
-                    'product': 1,
-                    'quantity': 2,
-                },
-            ]
-        }
+    total_price = OrderViewSet._calculate_total(product_selected.price, 2)
 
-        response = self.client.post(
-            '/api/orders/',
-            items,
-            format='json'
-        )
+    order = sample_order(user=user)
 
-        url = detail_order_item_url(1)
-        res = self.client.get(url)
-        self.assertEqual(len(res.data), 6)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    sample_order_item(
+        order, product_selected, 2, product_selected.discount, total_price
+    )
+
+    url = detail_orders_url(order.id)
+    res = client.get(url)
+
+    serializer = OrderSerializer(Orders.objects.get(id=order.id))
+
+    assert len(res.data["order_items"]) == 1
+    assert res.data == serializer.data
+
+
+@pytest.mark.django_db
+def test_view_order_items_detail(api_client, sample_product):
+    """test viewing an order items detail"""
+
+    client, user = api_client
+
+    product = sample_product(user=user)
+
+    items = {
+        "payment_mode": "Credit Card",
+        "order_items": [
+            {
+                "product": product.id,
+                "quantity": 2,
+            },
+        ],
+    }
+
+    response = client.post("/api/orders/", items, format="json")
+
+    order = Orders.objects.filter(user=user).first()
+
+    latest_order_item = OrderItem.objects.filter(order=order).first()
+    order_item_id = latest_order_item.id
+
+    url = detail_order_item_url(order_item_id)
+    res = client.get(url)
+    assert len(res.data) == 6
+    assert res.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED

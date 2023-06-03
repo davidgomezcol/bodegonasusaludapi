@@ -1,5 +1,5 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
+import pytest
+
 from django.urls import reverse
 
 from rest_framework import status
@@ -8,40 +8,30 @@ from rest_framework.test import APIClient
 from core.models import Categories
 from api.serializers import CategoriesSerializer
 
-CATEGORIES_URL = reverse('api:categories-list')
+CATEGORIES_URL = reverse("api:categories-list")
 
 
-class PublicCategoriesApiTests(TestCase):
-    """Test the publicly available categories Api"""
-    def setUp(self):
-        self.client = APIClient()
+@pytest.mark.django_db
+def test_login_required():
+    """Test that login is required for retrieving categories"""
+    client = APIClient()
+    res = client.get(CATEGORIES_URL)
 
-    def test_login_required(self):
-        """Test that login is required for retrieving categories"""
-        res = self.client.get(CATEGORIES_URL)
-
-        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+    assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-class PrivateCategoriesApiTests(TestCase):
-    """Test that authorized user retrieves data from categories Api"""
-    def setUp(self):
-        self.user = get_user_model().objects.create_user(
-            'user@bodegonasusalud.com',
-            'password123'
-        )
-        self.client = APIClient()
-        self.client.force_authenticate(self.user)
+@pytest.mark.django_db
+def test_retrieve_categories(api_client, sample_category):
+    """Test retrieving categories"""
 
-    def test_retrieve_categories(self):
-        """Test retrieving categories"""
-        Categories.objects.create(user=self.user, name="Vinos")
-        Categories.objects.create(user=self.user, name="Rones")
+    client, user = api_client
 
-        res = self.client.get(CATEGORIES_URL)
+    sample_category(user=user, name="Rones")
 
-        categories = Categories.objects.all().order_by('-name')
-        serializer = CategoriesSerializer(categories, many=True)
+    res = client.get(CATEGORIES_URL)
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)
+    categories = Categories.objects.all().order_by("-name")
+    serializer = CategoriesSerializer(categories, many=True)
+
+    assert res.status_code == status.HTTP_200_OK
+    assert res.data == serializer.data
