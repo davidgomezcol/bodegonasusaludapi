@@ -17,7 +17,7 @@ ORDER_STATUS_CHOICES = (
 )
 
 
-def product_image_file_path(filename):
+def product_image_file_path(_, filename):
     """Generates file path for new product image"""
     ext = filename.split(".")[-1]
     filename = f"{uuid.uuid4()}.{ext}"
@@ -30,6 +30,8 @@ def _generate_tracking_number():
 
 
 class UserManager(BaseUserManager):
+    """Custom UserManager Model that supports saving user with email instead of username"""
+
     def create_user(self, email, password=None, **extra_fields):
         """Creates and saves a new User"""
         if not email:
@@ -130,7 +132,7 @@ class Orders(models.Model):
     shipped_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return "{} - {}".format(self.id, self.tracking_number)
+        return f"{self.id} - {self.tracking_number}"
 
 
 class OrderItem(models.Model):
@@ -141,10 +143,11 @@ class OrderItem(models.Model):
     )
     product = models.ForeignKey("Products", on_delete=models.CASCADE)
     quantity = models.IntegerField()
+    item_price = models.DecimalField(max_digits=10, decimal_places=2)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(
         max_digits=10, decimal_places=2, blank=True, null=True
     )
 
     def __str__(self):
-        return "{} - {}".format(self.order.id, self.order.tracking_number)
+        return f"{self.order.id} - {self.order.tracking_number}"
