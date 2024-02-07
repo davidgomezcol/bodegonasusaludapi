@@ -1,13 +1,11 @@
 import pytest
 
-from django.test import TestCase
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from core.models import Products, Categories
+from core.models import Products
 
 from api.serializers import ProductsSerializer, ProductDetailSerializer
 
@@ -25,7 +23,7 @@ def detail_url(product_id):
 
 
 @pytest.mark.django_db
-def test_auth_required(api_client):
+def test_auth_required(api_client):  # pylint: disable=unused-argument
     """Test that authentication is required"""
     client = APIClient()
     res = client.get(PRODUCTS_URL)

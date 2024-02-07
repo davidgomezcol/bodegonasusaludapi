@@ -1,8 +1,9 @@
-import pytest
-from django.contrib.auth import get_user_model
-from core.models import Categories, Products
 from typing import Optional, Callable
 
+import pytest
+from django.contrib.auth import get_user_model
+
+from core.models import Categories, Products
 
 products_info = {
     "name": "Santa Ana",
@@ -16,8 +17,10 @@ products_info = {
 
 @pytest.fixture
 def sample_category(
-    db, sample_user: Callable[..., get_user_model]
+    sample_user: Callable[..., get_user_model]
 ) -> Callable[..., Categories]:
+    """Create and return a sample category."""
+
     def create_sample_category(**kwargs) -> Categories:
         user = kwargs.get("user") or sample_user()
         return Categories.objects.create(user=user, name=kwargs.get("name", "Vinos"))
@@ -25,15 +28,17 @@ def sample_category(
     return create_sample_category
 
 
+# pylint: disable=unused-argument, redefined-outer-name
 @pytest.fixture
 def sample_product(
-    db,
     sample_user: Callable[..., get_user_model],
     sample_category: Callable[..., sample_category],
 ) -> Callable[..., Products]:
+    """Create and return a sample product."""
+
     def create_sample_product(
         user: Optional[get_user_model] = None,
-        category: Optional[Categories] = None,
+        category: Optional[Categories] = None,  # pylint: disable=unused-argument
         **kwargs
     ):
         if user is None:

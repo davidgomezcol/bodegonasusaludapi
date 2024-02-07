@@ -12,3 +12,12 @@ repos:
     rev: 22.10.0
     hooks:
         - id: black
+-   repo: local
+    hooks:
+        - id: pylint
+          name: pylint
+          entry: pylint
+          language: system
+          types: [python]
+          files: \.(py)$
+          args: [--rcfile=.pylintrc]

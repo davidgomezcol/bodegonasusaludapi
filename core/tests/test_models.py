@@ -1,6 +1,6 @@
-import pytest
-
 from unittest.mock import patch
+
+import pytest
 from django.contrib.auth import get_user_model
 
 from core import models
@@ -56,7 +56,7 @@ def test_categories_str(sample_user, sample_category):
 def test_products_str(sample_user, sample_product, sample_category):
     """Test the products representation"""
     user = sample_user()
-    category = sample_category(user=user)
+    sample_category(user=user)
     product = sample_product(user=user)
 
     assert str(product) == product.name
@@ -68,7 +68,7 @@ def test_product_file_name_uuid(mock_uuid):
     """Test that the image is saved in the correct location"""
     uuid = "test-uuid"
     mock_uuid.return_value = uuid
-    file_path = models.product_image_file_path("myimage.jpg")
+    file_path = models.product_image_file_path("", "myimage.jpg")
 
     exp_path = f"product/{uuid}.jpg"
-    assert (file_path, exp_path)
+    assert file_path == exp_path

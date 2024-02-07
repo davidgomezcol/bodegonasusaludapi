@@ -82,7 +82,7 @@ class Categories(models.Model):
     )
     name = models.CharField(max_length=255)
 
-    def __str__(self):
+    def __str__(self):  # pylint: disable=invalid-str-returned
         return self.name
 
 
@@ -105,7 +105,7 @@ class Products(models.Model):
     )
     image = models.ImageField(null=True, upload_to=product_image_file_path)
 
-    def __str__(self):
+    def __str__(self):  # pylint: disable=invalid-str-returned
         return self.name
 
 

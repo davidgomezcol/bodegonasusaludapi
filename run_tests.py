@@ -27,10 +27,10 @@ if "--test" in pytest_args:
         abs_file_path = os.path.abspath(file_path)
 
         # Construct the test path with the absolute file path and the test function
-        test_path = "::".join([abs_file_path] + parts[1:])
+        TEST_PATH = "::".join([abs_file_path] + parts[1:])
 
         # Append the modified test path to the pytest arguments
-        pytest_args.append(test_path)
+        pytest_args.append(TEST_PATH)
     else:
         pytest_args.append(os.path.abspath(parts[0]))
 

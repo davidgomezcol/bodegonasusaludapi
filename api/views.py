@@ -39,7 +39,7 @@ class ProductsViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """Return appropriate serializer class"""
-        if self.action == "retrieve":
+        if self.action == "retrieve":  # pylint: disable=no-else-return
             return serializers.ProductDetailSerializer
         elif self.action == "upload-image":
             pass
@@ -81,7 +81,9 @@ class OrderViewSet(viewsets.ModelViewSet):
             total_price = (price - (price * discount / 100)) * quantity
         return total_price
 
+    # pylint: disable=unused-argument
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """Create a new order"""
         order_total = []
         orders_data = request.data.pop("order_items")
         order = Orders.objects.create(user=request.user, **request.data)

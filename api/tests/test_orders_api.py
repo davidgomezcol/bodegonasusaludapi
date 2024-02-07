@@ -47,16 +47,17 @@ def test_retrieve_orders(api_client, sample_product, sample_order):
 
     product_selected = Products.objects.get(id=item["product"])
 
-    total_price = OrderViewSet._calculate_total(
-        product_selected.price, item["quantity"]
+    total_price = OrderViewSet._calculate_total(  # pylint: disable=protected-access
+        product_selected.price, 0, item["quantity"]
     )
 
-    sample_order(user=user)
+    order = sample_order(user=user)
 
     OrderItem.objects.create(
-        order=Orders.objects.get(id=1),
+        order=order,
         product=product_selected,
         quantity=item["quantity"],
+        item_price=product_selected.price,
         discount=product_selected.discount,
         total_price=total_price,
     )
@@ -103,12 +104,19 @@ def test_view_order_detail(api_client, sample_product, sample_order, sample_orde
 
     product_selected = Products.objects.get(name="Santa Ana")
 
-    total_price = OrderViewSet._calculate_total(product_selected.price, 2)
+    total_price = OrderViewSet._calculate_total(  # pylint: disable=protected-access
+        product_selected.price, 2, 1
+    )
 
     order = sample_order(user=user)
 
     sample_order_item(
-        order, product_selected, 2, product_selected.discount, total_price
+        order,
+        product_selected,
+        2,
+        product_selected.discount,
+        product_selected.price,
+        total_price,
     )
 
     url = detail_orders_url(order.id)
@@ -147,6 +155,6 @@ def test_view_order_items_detail(api_client, sample_product):
 
     url = detail_order_item_url(order_item_id)
     res = client.get(url)
-    assert len(res.data) == 6
+    assert len(res.data) == 7
     assert res.status_code == status.HTTP_200_OK
     assert response.status_code == status.HTTP_201_CREATED
